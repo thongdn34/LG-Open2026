@@ -62,4 +62,3 @@ Vercel Services hiện ở trạng thái Beta. Docker Compose dành cho chạy l
 - `vercel.json`: Next.js + FastAPI services và `/api/*` routing trên Vercel.
 - Đổi URL API bằng `NEXT_PUBLIC_API_URL` ở frontend.
 
-
