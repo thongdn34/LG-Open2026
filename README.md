@@ -1,6 +1,6 @@
 # Lavita Garden Open 2026
 
-Website thông tin giải đấu gồm 5 tab: đăng ký trình độ, bảng đấu, lịch thi đấu, xếp hạng và tra cứu lịch vận động viên.
+Website thông tin giải đấu gồm 6 tab: đăng ký trình độ, thể lệ thi đấu, bảng đấu, lịch thi đấu, xếp hạng và tra cứu lịch vận động viên.
 
 Đăng ký gồm họ tên, số điện thoại tùy chọn và một trong bốn trình độ TBY, TB, TB+ hoặc Khá, kèm mô tả kỹ thuật, di chuyển, thực chiến và thể lực. Giải đấu tổ chức tại Galaxy Thủ Đức ([bản đồ](https://maps.app.goo.gl/hUEdJXFkEhqYrz347)).
 
@@ -61,4 +61,6 @@ Vercel Services hiện ở trạng thái Beta. Docker Compose dành cho chạy l
 - `docker-compose.yml`: chạy frontend + backend với SQLite volume.
 - `vercel.json`: Next.js + FastAPI services và `/api/*` routing trên Vercel.
 - Đổi URL API bằng `NEXT_PUBLIC_API_URL` ở frontend.
+
+
 
