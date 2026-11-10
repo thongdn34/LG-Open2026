@@ -1268,6 +1268,37 @@ em {
   font-size: 15px;
 }
 
+.hero-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.hero-fact {
+  display: flex;
+  min-height: 58px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 13px;
+  border: 1px solid #ffffffbf;
+  background: #ffffffa8;
+  box-shadow: 0 8px 24px #126cab12;
+}
+
+.hero-fact span {
+  color: #1685b7;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.hero-fact strong {
+  color: #123d91;
+  font-size: 15px;
+}
+
 .button.yellow {
   background: #ffd21c;
   color: #12356f;
@@ -1978,6 +2009,19 @@ td {
 
   .venue-link {
     margin-top: 15px;
+  }
+
+  .hero-facts {
+    gap: 8px;
+  }
+
+  .hero-fact {
+    min-height: 54px;
+    padding: 7px 10px;
+  }
+
+  .hero-fact strong {
+    font-size: 13px;
   }
 
   .hero-facts {
