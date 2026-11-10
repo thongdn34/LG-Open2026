@@ -258,8 +258,12 @@ def get_categories():
 @app.get("/api/stats")
 def get_stats():
     with connect() as db:
-        player_count = db.execute("SELECT COUNT(*) FROM players").fetchone()[0]
-        match_count = db.execute("SELECT COUNT(*) FROM matches").fetchone()[0]
+        player_count = db.execute(
+            "SELECT COUNT(*) AS count FROM players"
+        ).fetchone()["count"]
+        match_count = db.execute(
+            "SELECT COUNT(*) AS count FROM matches"
+        ).fetchone()["count"]
         return {"registered_players": player_count, "matches": match_count}
 
 
