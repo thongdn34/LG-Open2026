@@ -1,15 +1,19 @@
 from contextlib import asynccontextmanager
 from datetime import datetime
+import hashlib
 import os
 from pathlib import Path
 import secrets
 import sqlite3
+import time
 
 from fastapi import FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 
 DB_PATH = Path(os.getenv("DATABASE_PATH", Path(__file__).resolve().parents[1] / "tournament.db"))
+ACCESS_TTL_SECONDS = 6 * 60 * 60
+REFRESH_TTL_SECONDS = 30 * 24 * 60 * 60
 
 
 def dict_row_factory(cursor, row):
@@ -62,6 +66,15 @@ def initialize_database():
                 player_id INTEGER NOT NULL REFERENCES players(id),
                 created_at TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS app_settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS admin_sessions (
+                token_hash TEXT PRIMARY KEY,
+                token_type TEXT NOT NULL,
+                expires_at REAL NOT NULL
+            );
             CREATE TABLE IF NOT EXISTS matches (
                 id INTEGER PRIMARY KEY,
                 category_id INTEGER NOT NULL REFERENCES categories(id),
@@ -78,6 +91,14 @@ def initialize_database():
                 result_updated_at TEXT
             );
             """
+        )
+
+        player_columns = {row["name"] for row in db.execute("PRAGMA table_info(players)")}
+        if "group_name" not in player_columns:
+            db.execute("ALTER TABLE players ADD COLUMN group_name TEXT NOT NULL DEFAULT ''")
+        db.executemany(
+            "INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)",
+            [("registrations_open", "true"), ("results_published", "false")],
         )
 
         match_columns = {
@@ -270,15 +291,31 @@ def get_stats():
 @app.get("/api/matches")
 def get_matches():
     with connect() as db:
+        published = db.execute("SELECT value FROM app_settings WHERE key = 'results_published'").fetchone()
         rows = db.execute(
             """SELECT m.*, c.name AS category FROM matches m
             JOIN categories c ON c.id = m.category_id ORDER BY m.scheduled_at, m.court"""
         ).fetchall()
-        return [serialize_match(row) for row in rows]
+        matches = [serialize_match(row) for row in rows]
+        if not published or published["value"] != "true":
+            for match in matches:
+                match["score_a"] = None
+                match["score_b"] = None
+                if match["status"] == "finished":
+                    match["status"] = "scheduled"
+        return matches
 
 
 @app.get("/api/standings")
 def get_standings(category_id: int = Query(1, ge=1)):
+    with connect() as db:
+        published = db.execute("SELECT value FROM app_settings WHERE key = 'results_published'").fetchone()
+    if not published or published["value"] != "true":
+        return []
+    return standings_for_category(category_id)
+
+
+def standings_for_category(category_id: int):
     with connect() as db:
         category = db.execute("SELECT id FROM categories WHERE id = ?", (category_id,)).fetchone()
         if category is None:
@@ -364,6 +401,12 @@ def get_standings(category_id: int = Query(1, ge=1)):
     return result
 
 
+@app.get("/api/admin/standings/{category_id}")
+def get_admin_standings(category_id: int, authorization: str | None = Header(default=None)):
+    require_admin(authorization)
+    return standings_for_category(category_id)
+
+
 @app.get("/api/players")
 def get_players(search: str = Query("", max_length=80)):
     with connect() as db:
@@ -421,18 +464,128 @@ class MatchResult(BaseModel):
         return score_b
 
 
+class AdminLogin(BaseModel):
+    token: str = Field(min_length=1, max_length=500)
+
+
+def issue_admin_session():
+    access_token = secrets.token_urlsafe(36)
+    refresh_token = secrets.token_urlsafe(48)
+    now = time.time()
+    with connect() as db:
+        db.execute("DELETE FROM admin_sessions WHERE expires_at <= ?", (now,))
+        db.executemany(
+            "INSERT INTO admin_sessions (token_hash, token_type, expires_at) VALUES (?, ?, ?)",
+            [
+                (hashlib.sha256(access_token.encode()).hexdigest(), "access", now + ACCESS_TTL_SECONDS),
+                (hashlib.sha256(refresh_token.encode()).hexdigest(), "refresh", now + REFRESH_TTL_SECONDS),
+            ],
+        )
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "expires_in": ACCESS_TTL_SECONDS,
+    }
+
+
+def require_admin(authorization: str | None):
+    supplied = authorization.removeprefix("Bearer ") if authorization else ""
+    token_hash = hashlib.sha256(supplied.encode()).hexdigest()
+    with connect() as db:
+        session = db.execute(
+            "SELECT expires_at FROM admin_sessions WHERE token_hash = ? AND token_type = 'access'",
+            (token_hash,),
+        ).fetchone()
+    if not session or session["expires_at"] <= time.time():
+        raise HTTPException(status_code=401, detail="Phiên quản trị hết hạn. Vui lòng đăng nhập lại.")
+
+
+@app.post("/api/admin/session")
+def create_admin_session(payload: AdminLogin):
+    admin_token = os.getenv("ADMIN_TOKEN")
+    if not admin_token:
+        raise HTTPException(status_code=503, detail="Chưa cấu hình quyền quản trị.")
+    if not secrets.compare_digest(payload.token, admin_token):
+        raise HTTPException(status_code=401, detail="Mã quản trị không hợp lệ.")
+    return issue_admin_session()
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str = Field(min_length=1, max_length=200)
+
+
+@app.post("/api/admin/refresh")
+def refresh_admin_session(payload: RefreshRequest):
+    token_hash = hashlib.sha256(payload.refresh_token.encode()).hexdigest()
+    with connect() as db:
+        session = db.execute(
+            "SELECT expires_at FROM admin_sessions WHERE token_hash = ? AND token_type = 'refresh'",
+            (token_hash,),
+        ).fetchone()
+        if not session or session["expires_at"] <= time.time():
+            if session:
+                db.execute("DELETE FROM admin_sessions WHERE token_hash = ?", (token_hash,))
+            raise HTTPException(status_code=401, detail="Phiên quản trị hết hạn. Vui lòng đăng nhập lại.")
+        db.execute("DELETE FROM admin_sessions WHERE token_hash = ?", (token_hash,))
+    return issue_admin_session()
+
+
+@app.get("/api/admin/overview")
+def admin_overview(authorization: str | None = Header(default=None)):
+    require_admin(authorization)
+    with connect() as db:
+        players = db.execute(
+            """SELECT p.id, p.name, p.phone, p.group_name, p.category_id, c.name AS category
+            FROM players p JOIN categories c ON c.id = p.category_id ORDER BY c.id, p.name"""
+        ).fetchall()
+        settings = {row["key"]: row["value"] == "true" for row in db.execute("SELECT key, value FROM app_settings")}
+        matches = db.execute("""SELECT m.*, c.name AS category FROM matches m
+            JOIN categories c ON c.id = m.category_id ORDER BY m.scheduled_at, m.court""").fetchall()
+        categories = db.execute("SELECT id, name FROM categories ORDER BY id").fetchall()
+        return {"players": [dict(row) for row in players], "settings": settings,
+                "matches": [serialize_match(row) for row in matches], "categories": [dict(row) for row in categories]}
+
+
+class PlayerAssignment(BaseModel):
+    group_name: str = Field(default="", max_length=40)
+    category_id: int = Field(ge=1)
+
+
+@app.put("/api/admin/players/{player_id}")
+def assign_player(player_id: int, payload: PlayerAssignment, authorization: str | None = Header(default=None)):
+    require_admin(authorization)
+    with connect() as db:
+        if not db.execute("SELECT id FROM players WHERE id = ?", (player_id,)).fetchone():
+            raise HTTPException(status_code=404, detail="Không tìm thấy vận động viên.")
+        if not db.execute("SELECT id FROM categories WHERE id = ?", (payload.category_id,)).fetchone():
+            raise HTTPException(status_code=404, detail="Trình độ thi đấu không hợp lệ.")
+        db.execute("UPDATE players SET group_name = ?, category_id = ? WHERE id = ?", (payload.group_name.strip(), payload.category_id, player_id))
+        return {"message": "Đã cập nhật vận động viên và nhóm."}
+
+
+class TournamentSetting(BaseModel):
+    enabled: bool
+
+
+@app.put("/api/admin/settings/{setting_name}")
+def update_setting(setting_name: str, payload: TournamentSetting, authorization: str | None = Header(default=None)):
+    require_admin(authorization)
+    setting_keys = {"registrations": "registrations_open", "results": "results_published"}
+    key = setting_keys.get(setting_name)
+    if not key:
+        raise HTTPException(status_code=404, detail="Không tìm thấy thiết lập.")
+    with connect() as db:
+        db.execute("UPDATE app_settings SET value = ? WHERE key = ?", ("true" if payload.enabled else "false", key))
+    return {"message": "Đã cập nhật thiết lập."}
+
+
 @app.put("/api/admin/matches/{match_id}/result")
 def update_match_result(
     match_id: int,
     payload: MatchResult,
     authorization: str | None = Header(default=None),
 ):
-    admin_token = os.getenv("ADMIN_TOKEN")
-    if not admin_token:
-        raise HTTPException(status_code=503, detail="Chưa cấu hình quyền quản trị.")
-    supplied_token = authorization.removeprefix("Bearer ") if authorization else ""
-    if not secrets.compare_digest(supplied_token, admin_token):
-        raise HTTPException(status_code=401, detail="Mã quản trị không hợp lệ.")
+    require_admin(authorization)
 
     with connect() as db:
         match = db.execute("SELECT id FROM matches WHERE id = ?", (match_id,)).fetchone()
@@ -450,6 +603,9 @@ def update_match_result(
 @app.post("/api/registrations", status_code=201)
 def create_registration(payload: Registration):
     with connect() as db:
+        open_setting = db.execute("SELECT value FROM app_settings WHERE key = 'registrations_open'").fetchone()
+        if open_setting and open_setting["value"] != "true":
+            raise HTTPException(status_code=403, detail="Form đăng ký hiện đã đóng.")
         category = db.execute("SELECT id FROM categories WHERE id = ?", (payload.category_id,)).fetchone()
         if category is None:
             raise HTTPException(status_code=404, detail="Trình độ thi đấu không hợp lệ.")
@@ -465,4 +621,3 @@ def create_registration(payload: Registration):
 @app.get("/health")
 def health():
     return {"status": "ok"}
-

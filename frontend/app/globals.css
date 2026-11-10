@@ -1237,6 +1237,37 @@ em {
   transform: translateY(-50%);
 }
 
+.hero-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.hero-fact {
+  display: flex;
+  min-height: 58px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 13px;
+  border: 1px solid #ffffffbf;
+  background: #ffffffa8;
+  box-shadow: 0 8px 24px #126cab12;
+}
+
+.hero-fact span {
+  color: #1685b7;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.hero-fact strong {
+  color: #123d91;
+  font-size: 15px;
+}
+
 .button.yellow {
   background: #ffd21c;
   color: #12356f;
@@ -1737,6 +1768,192 @@ td {
   color: #ed267a;
 }
 
+.admin-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.admin-logout,
+.admin-toggle {
+  min-height: 42px;
+  border: 1px solid #b8dce9;
+  background: #fff;
+  padding: 8px 14px;
+  color: #16449b;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-dashboard {
+  width: min(100% - 10%, 1120px);
+}
+
+.admin-dashboard .admin-card {
+  max-width: none;
+  margin-bottom: 22px;
+}
+
+.admin-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  margin: 0 0 22px;
+  border-bottom: 1px solid #b8dce9;
+}
+
+.admin-tabs button {
+  flex: 0 0 auto;
+  min-height: 48px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  padding: 8px 16px;
+  color: #557096;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-tabs button:hover,
+.admin-tabs button.active {
+  color: #123d91;
+}
+
+.admin-tabs button.active {
+  border-bottom-color: #ed267a;
+}
+
+.admin-controls h1 {
+  margin-bottom: 20px;
+}
+
+.admin-toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 16px 0;
+  border-top: 1px solid #d9edf3;
+}
+
+.admin-toggle-row > div,
+.admin-player-row > div {
+  display: grid;
+  gap: 3px;
+}
+
+.admin-toggle-row strong,
+.admin-player-row strong {
+  color: #123d91;
+}
+
+.admin-toggle-row small,
+.admin-player-row small {
+  color: #557096;
+  font-size: 13px;
+}
+
+.admin-toggle.is-on {
+  border-color: #178a59;
+  background: #e7f8ef;
+  color: #17633f;
+}
+
+.admin-wide-card h2 {
+  margin-top: 7px;
+  color: #123d91;
+  font-size: clamp(25px, 4vw, 34px);
+}
+
+.admin-player-group,
+.admin-standing-group {
+  margin-top: 19px;
+  border: 1px solid #d9edf3;
+  padding: 15px;
+  background: #f8fdff;
+}
+
+.admin-player-group h3,
+.admin-standing-group h3 {
+  margin-bottom: 8px;
+  color: #1685b7;
+  font-size: 18px;
+}
+
+.admin-player-row {
+  display: grid;
+  grid-template-columns: 1.2fr 0.7fr 0.8fr;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 0;
+  border-top: 1px solid #e3f0f4;
+}
+
+.admin-player-row label {
+  display: grid;
+  gap: 4px;
+  color: #557096;
+  font-size: 12px;
+}
+
+.admin-player-row input,
+.admin-player-row select {
+  min-width: 0;
+  width: 100%;
+  height: 42px;
+  border: 1px solid #b8dce9;
+  background: #fff;
+  padding: 7px 9px;
+  color: #12356f;
+  font: inherit;
+}
+
+.admin-standings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.admin-standing-row {
+  display: grid;
+  grid-template-columns: 25px minmax(100px, 1fr) repeat(4, auto);
+  gap: 10px;
+  align-items: center;
+  padding: 9px 0;
+  border-top: 1px solid #e3f0f4;
+  color: #557096;
+  font-size: 12px;
+}
+
+.admin-standing-row b {
+  color: #ed267a;
+}
+
+.admin-standing-row strong {
+  color: #123d91;
+}
+
+@media (max-width: 700px) {
+  .admin-player-row,
+  .admin-standings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-standing-row {
+    grid-template-columns: 22px 1fr 1fr;
+  }
+
+  .admin-header-actions {
+    align-items: flex-end;
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
 @media (max-width: 540px) {
   .brand strong {
     max-width: 180px;
@@ -1761,6 +1978,19 @@ td {
 
   .venue-link {
     margin-top: 15px;
+  }
+
+  .hero-facts {
+    gap: 8px;
+  }
+
+  .hero-fact {
+    min-height: 54px;
+    padding: 7px 10px;
+  }
+
+  .hero-fact strong {
+    font-size: 13px;
   }
 
   .result-notice {
