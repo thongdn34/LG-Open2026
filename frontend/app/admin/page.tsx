@@ -17,6 +17,8 @@ export default function AdminPage() {
   const selectedMatch = matches.data?.find(
     (match) => match.id === Number(selectedId),
   );
+  const scoresAreTied =
+    scoreA !== "" && scoreB !== "" && Number(scoreA) === Number(scoreB);
   const updateResult = useMutation({
     mutationFn: ({
       matchId,
@@ -41,6 +43,9 @@ export default function AdminPage() {
   function submitResult(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selectedId) {
+      return;
+    }
+    if (scoresAreTied) {
       return;
     }
     updateResult.mutate({
@@ -130,6 +135,12 @@ export default function AdminPage() {
               </div>
             )}
 
+            {scoresAreTied && (
+              <p className="form-status error" role="alert">
+                Trận đấu không có kết quả hòa. Vui lòng nhập tỷ số có đội thắng.
+              </p>
+            )}
+
             <label className="admin-field">
               Mã quản trị
               <input
@@ -161,7 +172,9 @@ export default function AdminPage() {
             <button
               className="button yellow submit"
               type="submit"
-              disabled={!selectedMatch || updateResult.isPending}
+              disabled={
+                !selectedMatch || scoresAreTied || updateResult.isPending
+              }
             >
               {updateResult.isPending ? "Đang cập nhật…" : "Cập nhật kết quả"}
               <span>↗</span>
