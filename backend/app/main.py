@@ -12,6 +12,10 @@ from pydantic import BaseModel, Field, field_validator
 DB_PATH = Path(os.getenv("DATABASE_PATH", Path(__file__).resolve().parents[1] / "tournament.db"))
 
 
+def dict_row_factory(cursor, row):
+    return {column[0]: row[index] for index, column in enumerate(cursor.description or ())}
+
+
 def connect():
     remote_url = os.getenv("TURSO_DATABASE_URL")
     if remote_url:
@@ -21,7 +25,7 @@ def connect():
             remote_url,
             auth_token=os.getenv("TURSO_AUTH_TOKEN"),
         )
-        connection.row_factory = sqlite3.Row
+        connection.row_factory = dict_row_factory
         connection.execute("PRAGMA foreign_keys = ON")
         return connection
 
@@ -31,7 +35,7 @@ def connect():
         )
 
     connection = sqlite3.connect(DB_PATH)
-    connection.row_factory = sqlite3.Row
+    connection.row_factory = dict_row_factory
     connection.execute("PRAGMA foreign_keys = ON")
     return connection
 
@@ -452,3 +456,4 @@ def create_registration(payload: Registration):
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
