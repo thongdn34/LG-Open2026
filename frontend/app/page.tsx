@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, Category, Match } from "@/lib/api";
+import { api, Category, Match, TOURNAMENT_CATEGORIES } from "@/lib/api";
 
 const tabs = [
   "Đăng ký",
@@ -34,10 +34,6 @@ export default function Home() {
   const [newResult, setNewResult] = useState<Match | null>(null);
   const queryClient = useQueryClient();
   const stats = useQuery({ queryKey: ["stats"], queryFn: api.stats });
-  const categories = useQuery({
-    queryKey: ["categories"],
-    queryFn: api.categories,
-  });
   const matches = useQuery({
     queryKey: ["matches"],
     queryFn: api.matches,
@@ -65,7 +61,7 @@ export default function Home() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["stats"] }),
   });
   const list = matches.data ?? [];
-  const categoriesList = categories.data ?? [];
+  const categoriesList = TOURNAMENT_CATEGORIES;
   const upcoming = useMemo(
     () => list.filter((match) => match.status !== "finished"),
     [list],
@@ -199,6 +195,16 @@ export default function Home() {
             <strong>Galaxy Thủ Đức</strong>
             <b aria-hidden="true">↗</b>
           </a>
+          <div className="hero-facts" aria-label="Thông tin giải đấu">
+            <div className="hero-fact">
+              <span>NGÀY GIỜ THI ĐẤU</span>
+              <strong>29/11/2026 · 06:30–10:30</strong>
+            </div>
+            <div className="hero-fact">
+              <span>LỆ PHÍ THAM GIA</span>
+              <strong>200.00 VND</strong>
+            </div>
+          </div>
           <div className="hero-actions">
             <button
               className="button yellow"
