@@ -325,15 +325,12 @@ def get_standings(category_id: int = Query(1, ge=1)):
 
         if match["score_a"] > match["score_b"]:
             stats_a["wins"] += 1
-            stats_a["points"] += 2
+            stats_a["points"] += 1
             stats_b["losses"] += 1
         elif match["score_b"] > match["score_a"]:
             stats_b["wins"] += 1
-            stats_b["points"] += 2
-            stats_a["losses"] += 1
-        else:
-            stats_a["points"] += 1
             stats_b["points"] += 1
+            stats_a["losses"] += 1
 
     result = []
     for group_name, pairs in sorted(groups.items()):
@@ -414,6 +411,14 @@ class Registration(BaseModel):
 class MatchResult(BaseModel):
     score_a: int = Field(ge=0, le=30)
     score_b: int = Field(ge=0, le=30)
+
+    @field_validator("score_b")
+    @classmethod
+    def scores_must_have_a_winner(cls, score_b, info):
+        score_a = info.data.get("score_a")
+        if score_a is not None and score_a == score_b:
+            raise ValueError("Trận đấu không có kết quả hòa.")
+        return score_b
 
 
 @app.put("/api/admin/matches/{match_id}/result")
