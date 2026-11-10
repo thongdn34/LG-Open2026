@@ -196,6 +196,7 @@ export const adminApi = {
 };
 
 export const api = {
+  categories: () => request<Category[]>("/api/categories"),
   stats: () => request<TournamentStats>("/api/stats"),
   matches: () => request<Match[]>("/api/matches"),
   standings: (categoryId: number) =>
