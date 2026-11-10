@@ -605,8 +605,8 @@ function Rules({ categories }: { categories: Category[] }) {
           <span>01</span>
           <h4>Xếp hạng vòng bảng</h4>
           <p>
-            Trận thắng được 2 điểm, trận hòa được 1 điểm. Nếu bằng điểm, bảng
-            xếp hạng xét số trận thắng, hiệu số điểm rồi tổng điểm ghi được.
+            Thắng được 1 điểm, thua được 0 điểm và không có kết quả hòa. Nếu
+            bằng điểm, bảng xếp hạng xét hiệu số điểm rồi tổng điểm ghi được.
           </p>
         </article>
         <article>
