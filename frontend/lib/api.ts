@@ -47,6 +47,45 @@ export const TOURNAMENT_CATEGORIES: Category[] = [
   },
 ];
 
+export const TOURNAMENT_CATEGORIES: Category[] = [
+  {
+    id: 1,
+    name: "TBY",
+    description: "Trung bình yếu",
+    technique_description:
+      "Nắm luật cơ bản nhưng thao tác còn lóng ngóng. Phông cầu chưa tới cuối sân; bỏ nhỏ và đập cầu còn thiếu lực, cầu chưa cắm. Di chuyển bị động, thường chạy theo cầu.",
+    matchplay_description:
+      "Dễ mất kiểm soát và hay hỏng các quả cầu đơn giản. Thể lực nhanh đuối khi lượt cầu kéo dài qua 2–3 nhịp.",
+  },
+  {
+    id: 2,
+    name: "TB",
+    description: "Trung bình chuẩn",
+    technique_description:
+      "Nắm vững kỹ thuật cơ bản: phông sâu gần hết sân, phát cầu ổn định, biết chém và bỏ nhỏ. Bắt đầu điều cầu, tìm khoảng trống để đưa cầu đi.",
+    matchplay_description:
+      "Lối chơi ổn định, phán đoán hướng cầu khá tốt. Biết phối hợp vị trí khi đánh đôi, phân biệt tương đối rõ tấn công và phòng thủ.",
+  },
+  {
+    id: 3,
+    name: "TB+",
+    description: "Trung bình cộng / Trung bình khá",
+    technique_description:
+      "Kỹ thuật cơ bản thành thạo khoảng 70–80%; xử lý nhanh các tình huống phản tạt, kê cầu và đập cầu uy lực hơn. Di chuyển chủ động cả bốn góc sân.",
+    matchplay_description:
+      "Biết đọc trận đấu, phân phối sức và phòng thủ nhiều hướng. Nhịp độ thi đấu nhanh, ít mắc lỗi tự đánh hỏng.",
+  },
+  {
+    id: 4,
+    name: "Khá",
+    description: "Trình độ khá",
+    technique_description:
+      "Kỹ thuật toàn diện, đường cầu sắc bén và có tư duy chiến thuật rõ ràng. Thực hiện thuần thục các tình huống khó bằng cả tay thuận lẫn trái tay.",
+    matchplay_description:
+      "Xử lý nhạy bén dưới áp lực cao, phản xạ nhanh. Thể lực tốt, có thể làm chủ thế trận trước đối thủ ở trình độ thấp hơn.",
+  },
+];
+
 export type Match = {
   id: number;
   category: string;
@@ -196,7 +235,6 @@ export const adminApi = {
 };
 
 export const api = {
-  categories: () => request<Category[]>("/api/categories"),
   stats: () => request<TournamentStats>("/api/stats"),
   matches: () => request<Match[]>("/api/matches"),
   standings: (categoryId: number) =>
